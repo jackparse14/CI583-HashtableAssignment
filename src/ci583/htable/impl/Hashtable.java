@@ -32,7 +32,8 @@ public class Hashtable<V> {
 	 * @param pt
 	 */
 	public Hashtable(int initialCapacity, PROBE_TYPE pt) {
-		Hashtable<V> hashTable1 = new Hashtable<V>(initialCapacity,pt);
+		probeType = pt;
+		itemCount = 0;
 		setArraySize(initialCapacity);
 	}
 
@@ -41,7 +42,8 @@ public class Hashtable<V> {
 	 * @param initialCapacity
 	 */
 	public Hashtable(int initialCapacity) {
-		Hashtable<V> hashTable2 = new Hashtable<V>(initialCapacity, PROBE_TYPE.LINEAR_PROBE);
+		probeType = PROBE_TYPE.LINEAR_PROBE;
+		itemCount = 0;
 		setArraySize(initialCapacity);
 	}
 
@@ -68,11 +70,13 @@ public class Hashtable<V> {
 		if(getLoadFactor() > maxLoad) {
 			resize();
 		}
+		Object newPair = new Pair(key,value);
 		if(hasKey(key)){
-			Object newPair = new Pair(key,value);
-			//findEmpty(,,key);
+			arr[getNextLocation(0,0,key)] = newPair;
+		} else{
+			arr[findEmpty(hash(key),0,key)] = newPair;
 		}
-
+		itemCount++;
 	}
 
 	/**
@@ -82,8 +86,11 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public V get(String key) {
-		throw new UnsupportedOperationException("Method not implemented");
-		//find(,key,0);
+		if (key == null){
+			return null;
+		} else {
+			return find(hash(key), key, 0);
+		}
 	}
 
 	/**
@@ -92,6 +99,19 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public boolean hasKey(String key) {
+		for(int i = 0; i < arr.length; i++){
+
+			//Object object = arr[i].key;
+			//Pair tempPair = new Pair(arr[i].key)
+			//while(key != arr[i].){
+
+			//}
+			if(key == arr[i]){
+				return true;
+			} else {
+				return false;
+			}
+		}
 		throw new UnsupportedOperationException("Method not implemented");
 	}
 
@@ -134,7 +154,19 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	private V find(int startPos, String key, int stepNum) {
-		throw new UnsupportedOperationException("Method not implemented");
+		//Object tempPair = arr[startPos];
+		if(arr[startPos] == null){
+			return null;
+		} else if (arr[startPos].key == key){
+			return arr[startPos].value;
+		} else {
+			stepNum++;
+			return find(
+					getNextLocation(startPos,stepNum,key),
+					key,
+					stepNum);
+		}
+
 	}
 
 	/**
@@ -148,7 +180,16 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	private int findEmpty(int startPos, int stepNum, String key) {
-		throw new UnsupportedOperationException("Method not implemented");
+		if (arr[startPos] == null) {
+			return startPos;
+		} else {
+			stepNum++;
+			return findEmpty(
+					getNextLocation(startPos,stepNum,key),
+					stepNum,
+					key
+			);
+		}
 	}
 
 	/**
@@ -202,7 +243,12 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	private int hash(String key) {
-		throw new UnsupportedOperationException("Method not implemented");
+		int hashVal = key.charAt(0)-96;
+		for (int i = 0;i<key.length(); i++){
+			int c = key.charAt(i) - 96; // subtracting 96 in java turns ASCII characters to integers
+			hashVal = (hashVal * 27 + c) % max; // radix is 27  WE CAN CHANGE 96 AND 27 so that keys can be more characters
+		}
+		return hashVal;
 	}
 
 	/**
@@ -212,6 +258,7 @@ public class Hashtable<V> {
 	 */
 
 	private boolean isPrime(int n) {
+		if(n<=2) return true;
 		if(n%2==0) return false;
 		for(int i=3;i*i<=n;i+=2){
 			if(n%i==0){
