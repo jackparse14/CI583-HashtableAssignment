@@ -3,18 +3,20 @@ package ci583.htable.impl;
 /**
  * A HashTable with no deletions allowed. Duplicates overwrite the existing value. Values are of
  * type V and keys are strings -- one extension is to adapt this class to use other types as keys.
- * 
- * The underlying data is stored in the array `arr', and the actual values stored are pairs of 
- * (key, value). This is so that we can detect collisions in the hash function and look for the next 
+ *
+ * The underlying data is stored in the array `arr', and the actual values stored are pairs of
+ * (key, value). This is so that we can detect collisions in the hash function and look for the next
  * location when necessary.
  */
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class Hashtable<V> {
 
 	private Object[] arr; //an array of Pair objects, where each pair contains the key and value stored in the hashtable
+
 	private int max; //the size of arr. This should be a prime number
 	private int itemCount; //the number of items stored in arr
 	private final double maxLoad = 0.6; //the maximum load factor
@@ -57,12 +59,12 @@ public class Hashtable<V> {
 	}
 
 	/**
-	 * Store the value against the given key. If the loadFactor exceeds maxLoad, call the resize 
+	 * Store the value against the given key. If the loadFactor exceeds maxLoad, call the resize
 	 * method to resize the array. If the key already exists then its value should be overwritten.
-	 * Create a new Pair item containing the key and value, then use the findEmpty method to find an unoccupied 
+	 * Create a new Pair item containing the key and value, then use the findEmpty method to find an unoccupied
 	 * position in the array to store the pair. Call findEmpty with the hashed value of the key as the starting
 	 * position for the search, stepNum of zero and the original key.
-	 * containing   
+	 * containing
 	 * @param key
 	 * @param value
 	 */
@@ -94,25 +96,18 @@ public class Hashtable<V> {
 	}
 
 	/**
-	 * Return true if the Hashtable contains this key, false otherwise 
+	 * Return true if the Hashtable contains this key, false otherwise
 	 * @param key
 	 * @return
 	 */
 	public boolean hasKey(String key) {
-		for(int i = 0; i < arr.length; i++){
-
-			//Object object = arr[i].key;
-			//Pair tempPair = new Pair(arr[i].key)
-			//while(key != arr[i].){
-
-			//}
-			if(key == arr[i]){
+		int index = hash(key);
+		for(int i = 0; i < max; i++){
+			if(((Pair) arr[i]).key == key){
 				return true;
-			} else {
-				return false;
 			}
 		}
-		throw new UnsupportedOperationException("Method not implemented");
+		return false;
 	}
 
 	/**
@@ -120,8 +115,13 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public Collection<String> getKeys() {
-		throw new UnsupportedOperationException("Method not implemented");
-		//return collection;
+		Collection keyCollection = new ArrayList();
+		Pair tempPair;
+		for(int i = 0; i < max; i++){
+			tempPair = (Pair) arr[i];
+			keyCollection.add(tempPair.key); // 	change to only output keys
+		}
+		return keyCollection;
 	}
 
 	/**
@@ -139,14 +139,14 @@ public class Hashtable<V> {
 	public int getCapacity() {
 		return max;
 	}
-	
+
 	/**
 	 * Find the value stored for this key, starting the search at position startPos in the array. If
-	 * the item at position startPos is null, the Hashtable does not contain the value, so return null. 
-	 * If the key stored in the pair at position startPos matches the key we're looking for, return the associated 
+	 * the item at position startPos is null, the Hashtable does not contain the value, so return null.
+	 * If the key stored in the pair at position startPos matches the key we're looking for, return the associated
 	 * value. If the key stored in the pair at position startPos does not match the key we're looking for, this
-	 * is a hash collision so use the getNextLocation method with an incremented value of stepNum to find 
-	 * the next location to search (the way that this is calculated will differ depending on the probe type 
+	 * is a hash collision so use the getNextLocation method with an incremented value of stepNum to find
+	 * the next location to search (the way that this is calculated will differ depending on the probe type
 	 * being used). Then use the value of the next location in a recursive call to find.
 	 * @param startPos
 	 * @param key
@@ -154,11 +154,11 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	private V find(int startPos, String key, int stepNum) {
-		//Object tempPair = arr[startPos];
+		Pair tempPair = (Pair) arr[startPos];
 		if(arr[startPos] == null){
 			return null;
-		} else if (arr[startPos].key == key){
-			return arr[startPos].value;
+		} else if (tempPair.key == key){
+			return (V) tempPair.value;
 		} else {
 			stepNum++;
 			return find(
@@ -166,13 +166,12 @@ public class Hashtable<V> {
 					key,
 					stepNum);
 		}
-
 	}
 
 	/**
 	 * Find the first unoccupied location where a value associated with key can be stored, starting the
 	 * search at position startPos. If startPos is unoccupied, return startPos. Otherwise use the getNextLocation
-	 * method with an incremented value of stepNum to find the appropriate next position to check 
+	 * method with an incremented value of stepNum to find the appropriate next position to check
 	 * (which will differ depending on the probe type being used) and use this in a recursive call to findEmpty.
 	 * @param startPos
 	 * @param stepNum
@@ -194,7 +193,7 @@ public class Hashtable<V> {
 
 	/**
 	 * Finds the next position in the Hashtable array starting at position startPos. If the linear
-	 * probe is being used, we just increment startPos. If the double hash probe type is being used, 
+	 * probe is being used, we just increment startPos. If the double hash probe type is being used,
 	 * add the double hashed value of the key to startPos. If the quadratic probe is being used, add
 	 * the square of the step number to startPos.
 	 * @param startPos
@@ -205,17 +204,17 @@ public class Hashtable<V> {
 	private int getNextLocation(int startPos, int stepNum, String key) {
 		int step = startPos;
 		switch (probeType) {
-		case LINEAR_PROBE:
-			step++;
-			break;
-		case DOUBLE_HASH:
-			step += doubleHash(key);
-			break;
-		case QUADRATIC_PROBE:
-			step += stepNum * stepNum;
-			break;
-		default:
-			break;
+			case LINEAR_PROBE:
+				step++;
+				break;
+			case DOUBLE_HASH:
+				step += doubleHash(key);
+				break;
+			case QUADRATIC_PROBE:
+				step += stepNum * stepNum;
+				break;
+			default:
+				break;
 		}
 		return step % max;
 	}
@@ -237,12 +236,12 @@ public class Hashtable<V> {
 
 	/**
 	 * Return an int value calculated by hashing the key. See the lecture slides for information
-	 * on creating hash functions. The return value should be less than max, the maximum capacity 
+	 * on creating hash functions. The return value should be less than max, the maximum capacity
 	 * of the array
 	 * @param key
 	 * @return
 	 */
-	private int hash(String key) {
+	public int hash(String key) {
 		int hashVal = key.charAt(0)-96;
 		for (int i = 0;i<key.length(); i++){
 			int c = key.charAt(i) - 96; // subtracting 96 in java turns ASCII characters to integers
@@ -296,14 +295,14 @@ public class Hashtable<V> {
 		}
 	}
 
-	
+
 	/**
 	 * Instances of Pair are stored in the underlying array. We can't just store
 	 * the value because we need to check the original key in the case of collisions.
 	 * @author jb259
 	 *
 	 */
-	private class Pair {
+	public class Pair{
 		private String key;
 		private V value;
 
