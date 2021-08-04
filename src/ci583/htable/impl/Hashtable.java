@@ -1,5 +1,7 @@
 package ci583.htable.impl;
 
+	//18008 or 4000000
+
 /**
  * A HashTable with no deletions allowed. Duplicates overwrite the existing value. Values are of
  * type V and keys are strings -- one extension is to adapt this class to use other types as keys.
@@ -16,7 +18,6 @@ import java.util.Collection;
 public class Hashtable<V> {
 
 	private Object[] arr; //an array of Pair objects, where each pair contains the key and value stored in the hashtable
-
 	private int max; //the size of arr. This should be a prime number
 	private int itemCount; //the number of items stored in arr
 	private final double maxLoad = 0.6; //the maximum load factor
@@ -35,7 +36,6 @@ public class Hashtable<V> {
 	 */
 	public Hashtable(int initialCapacity, PROBE_TYPE pt) {
 		probeType = pt;
-		itemCount = 0;
 		setArraySize(initialCapacity);
 	}
 
@@ -45,7 +45,6 @@ public class Hashtable<V> {
 	 */
 	public Hashtable(int initialCapacity) {
 		probeType = PROBE_TYPE.LINEAR_PROBE;
-		itemCount = 0;
 		setArraySize(initialCapacity);
 	}
 
@@ -56,6 +55,7 @@ public class Hashtable<V> {
 			max = nextPrime(initialCapacity);
 		}
 		arr = new Object[max];
+		itemCount = 0;
 	}
 
 	/**
@@ -68,10 +68,8 @@ public class Hashtable<V> {
 	 * @param key
 	 * @param value
 	 */
-	public void put(String key, V value){
-		if(getLoadFactor() > maxLoad) {
-			resize();
-		}
+	public void put(String key, V value) {
+
 		Object newPair = new Pair(key,value);
 		if(hasKey(key)){
 			arr[getNextLocation(0,0,key)] = newPair;
@@ -79,6 +77,10 @@ public class Hashtable<V> {
 			arr[findEmpty(hash(key),0,key)] = newPair;
 		}
 		itemCount++;
+		if(getLoadFactor() >= maxLoad) {
+			resize();
+		}
+		System.out.println("itemcount = " + itemCount);
 	}
 
 	/**
@@ -88,11 +90,8 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public V get(String key) {
-		if (key == null){
-			return null;
-		} else {
-			return find(hash(key), key, 0);
-		}
+		int index = hash(key);
+		return find(index,key,0);
 	}
 
 	/**
@@ -101,13 +100,9 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public boolean hasKey(String key) {
-		int index = hash(key);
-		for(int i = 0; i < max; i++){
-			if(((Pair) arr[i]).key == key){
-				return true;
-			}
-		}
-		return false;
+		if(get(key) == null){
+			return false;
+		} else{ return true;}
 	}
 
 	/**
@@ -115,11 +110,13 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public Collection<String> getKeys() {
-		Collection keyCollection = new ArrayList();
+		Collection keyCollection = new ArrayList<>();
 		Pair tempPair;
 		for(int i = 0; i < max; i++){
-			tempPair = (Pair) arr[i];
-			keyCollection.add(tempPair.key); // 	change to only output keys
+			if (arr[i] != null) {
+				tempPair = (Pair) arr[i];
+				keyCollection.add(tempPair.key);
+			}
 		}
 		return keyCollection;
 	}
@@ -129,7 +126,8 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	public double getLoadFactor() {
-		return itemCount/max;
+		//max = arr.length;
+		return (double) itemCount / (double) max;
 	}
 
 	/**
@@ -154,17 +152,18 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	private V find(int startPos, String key, int stepNum) {
-		Pair tempPair = (Pair) arr[startPos];
-		if(arr[startPos] == null){
+		Pair tempPair = (Pair)arr [startPos];
+
+		if (arr [startPos] == null) {
 			return null;
-		} else if (tempPair.key == key){
-			return (V) tempPair.value;
+		} else if (tempPair.key.equals(key)) {
+			return tempPair.value;
 		} else {
-			stepNum++;
 			return find(
 					getNextLocation(startPos,stepNum,key),
 					key,
-					stepNum);
+					++stepNum);
+
 		}
 	}
 
@@ -182,9 +181,8 @@ public class Hashtable<V> {
 		if (arr[startPos] == null) {
 			return startPos;
 		} else {
-			stepNum++;
 			return findEmpty(
-					getNextLocation(startPos,stepNum,key),
+					getNextLocation(startPos,++stepNum,key),
 					stepNum,
 					key
 			);
@@ -241,13 +239,13 @@ public class Hashtable<V> {
 	 * @param key
 	 * @return
 	 */
-	public int hash(String key) {
-		int hashVal = key.charAt(0)-96;
-		for (int i = 0;i<key.length(); i++){
-			int c = key.charAt(i) - 96; // subtracting 96 in java turns ASCII characters to integers
-			hashVal = (hashVal * 27 + c) % max; // radix is 27  WE CAN CHANGE 96 AND 27 so that keys can be more characters
+	private int hash(String key) {
+		int hashVal = key. charAt (0) - 96;
+		for (int i =0; i<key. length (); i++) {
+			int c = key. charAt (i) - 96; // subtracting 96 in java turns ASCII characters to integers
+			hashVal = ( hashVal * 27 + c) % max ; // radix is 27  WE CAN CHANGE 96 AND 27 so that keys can be more characters
 		}
-		return hashVal;
+		return Math.abs(hashVal);
 	}
 
 	/**
@@ -255,10 +253,10 @@ public class Hashtable<V> {
 	 * @param n
 	 * @return
 	 */
-
 	private boolean isPrime(int n) {
-		if(n<=2) return true;
-		if(n%2==0) return false;
+		if(n<2) {return false;};
+		if(n==2) {return true;};
+		if(n%2==0){ return false;};
 		for(int i=3;i*i<=n;i+=2){
 			if(n%i==0){
 				return false;
@@ -273,10 +271,9 @@ public class Hashtable<V> {
 	 * @return
 	 */
 	private int nextPrime(int n) {
-		n+=1;
+		n++;
 		while(!isPrime(n)){
 			n += 1;
-
 		}
 		return n;
 	}
@@ -288,13 +285,22 @@ public class Hashtable<V> {
 	 */
 	private void resize() {
 		max *= 2;
-		if(isPrime(max)){
-			return;
-		} else {
+		if(!isPrime(max)){
 			max = nextPrime(max);
 		}
-	}
+		Object[] oldArr = arr;
+		arr = new Object[max];
+		itemCount = 0;
+		Pair tempPair;
+		for (int i = 0; i < oldArr.length; i++ ){
+			if (oldArr[i] != null) {
+				tempPair = (Pair) (oldArr[i]);
+				put(tempPair.key , tempPair.value);
+				//itemCount++;
+			}
+		}
 
+	}
 
 	/**
 	 * Instances of Pair are stored in the underlying array. We can't just store
@@ -302,7 +308,7 @@ public class Hashtable<V> {
 	 * @author jb259
 	 *
 	 */
-	public class Pair{
+	private class Pair {
 		private String key;
 		private V value;
 
@@ -311,5 +317,4 @@ public class Hashtable<V> {
 			this.value = value;
 		}
 	}
-
 }
